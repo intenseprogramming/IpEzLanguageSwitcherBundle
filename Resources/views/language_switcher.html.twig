@@ -1,0 +1,17 @@
+{% if current and alternative|length %}
+    <ul class="navbar-form navbar-right">
+        <li>
+            <div class="btn-group">
+                <button class="btn btn-primary dropdown-toggle" aria-expanded="false" aria-haspopup="true" type="button" data-toggle="dropdown">
+                    {{ ('language.code.' ~ current.languageCode)|trans }}
+                    <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu">
+                    {% for item in alternative %}
+                        <li><a href="{{ item.url }}">{{ ('language.code.' ~ item.languageCode)|trans }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </li>
+    </ul>
+{% endif %}

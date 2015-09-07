@@ -1,0 +1,3 @@
+
+parameters:
+    intense.programming.language.switcher.template: IntenseProgrammingLanguageSwitcherBundle::language_switcher.html.twig

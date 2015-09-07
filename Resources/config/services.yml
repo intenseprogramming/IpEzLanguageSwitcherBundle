@@ -1,0 +1,9 @@
+
+parameters:
+    intense.programming.language.switcher.class: IntenseProgramming\LanguageSwitcherBundle\Services\UrlGeneratorService
+
+services:
+    intense.programming.language.switcher:
+        class: %intense.programming.language.switcher.class%
+        arguments:
+            - @service_container
