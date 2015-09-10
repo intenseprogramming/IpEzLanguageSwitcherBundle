@@ -17,6 +17,7 @@ use eZ\Publish\API\Repository\Values\Content\Location;
 use eZ\Publish\Core\MVC\Symfony\Routing\ChainRouter;
 use eZ\Publish\Core\MVC\Symfony\Routing\Generator\RouteReferenceGeneratorInterface;
 use eZ\Publish\Core\MVC\Symfony\SiteAccess;
+use InvalidArgumentException;
 use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -91,36 +92,43 @@ class UrlGeneratorService
             'alternative' => array()
         );
 
-        $requestAccess = $request->get('siteaccess', false);
-        if ($requestAccess instanceof SiteAccess) {
-            $translationSiteaccesses = $this->configResolver->getParameter('translation_siteaccesses');
+        try {
+            $requestAccess = $request->get('siteaccess', false);
+            if ($requestAccess instanceof SiteAccess) {
+                $translationSiteaccesses = $this->configResolver->getParameter('translation_siteaccesses');
 
-            foreach ($translationSiteaccesses as $siteaccess) {
-                $languages = $this->container->getParameter('ezsettings.' . $siteaccess . '.languages');
+                foreach ($translationSiteaccesses as $siteaccess) {
+                    $languages = $this->container->getParameter('ezsettings.' . $siteaccess . '.languages');
 
-                if (!empty($languages)) {
-                    try {
-                        $language = $languages[0];
+                    if (!empty($languages)) {
+                        try {
+                            $language = $languages[0];
 
-                        if (is_string($translationParameter)) {
-                            $description = $this->generateUriRoute($translationParameter, $language, $siteaccess);
-                        } else {
-                            $description = $this->generateLocationRoute($translationParameter, $language, $siteaccess);
+                            if (is_string($translationParameter)) {
+                                $description = $this->generateUriRoute(
+                                    $translationParameter, $language, $siteaccess
+                                );
+                            } else {
+                                $description = $this->generateLocationRoute(
+                                    $translationParameter, $language, $siteaccess
+                                );
+                            }
+
+                            if ($requestAccess->name == $siteaccess) {
+                                $returnValue['current'] = $description;
+                            } else {
+                                $returnValue['alternative'][] = $description;
+                            }
+                        } catch (NotFoundException $exception) {
                         }
-
-                        if ($requestAccess->name == $siteaccess) {
-                            $returnValue['current'] = $description;
-                        } else {
-                            $returnValue['alternative'][] = $description;
-                        }
-                    } catch (NotFoundException $exception) {
                     }
                 }
             }
-        } else {
-        }
 
-        return $returnValue;
+            return $returnValue;
+        } catch (InvalidArgumentException $exception) {
+            return $returnValue;
+        }
     }
 
     /**
