@@ -80,10 +80,11 @@ class UrlGeneratorService
      *
      * @param string|Location $translationParameter
      * @param Request         $request
+     * @param array           $parameters
      *
      * @return array
      */
-    public function generateUrls($translationParameter, Request $request)
+    public function generateUrls($translationParameter, Request $request, array $parameters = array())
     {
         $this->init();
 
@@ -91,6 +92,9 @@ class UrlGeneratorService
             'current' => null,
             'alternative' => array()
         );
+        if (count($parameters)) {
+            array_shift($parameters);
+        }
 
         try {
             $requestAccess = $request->get('siteaccess', false);
@@ -98,6 +102,7 @@ class UrlGeneratorService
                 $translationSiteaccesses = $this->configResolver->getParameter('translation_siteaccesses');
 
                 foreach ($translationSiteaccesses as $siteaccess) {
+                    $parameters['siteaccess'] = $siteaccess;
                     $languages = $this->container->getParameter('ezsettings.' . $siteaccess . '.languages');
 
                     if (!empty($languages)) {
@@ -106,11 +111,11 @@ class UrlGeneratorService
 
                             if (is_string($translationParameter)) {
                                 $description = $this->generateUriRoute(
-                                    $translationParameter, $language, $siteaccess
+                                    $translationParameter, $language, $parameters
                                 );
                             } else {
                                 $description = $this->generateLocationRoute(
-                                    $translationParameter, $language, $siteaccess
+                                    $translationParameter, $language, $parameters
                                 );
                             }
 
@@ -136,20 +141,20 @@ class UrlGeneratorService
      *
      * @param Location $location
      * @param string   $language
-     * @param string   $siteaccess
+     * @param array    $parameters
      *
      * @return array
      */
-    protected function generateLocationRoute(Location $location, $language, $siteaccess)
+    protected function generateLocationRoute(Location $location, $language, $parameters)
     {
         $content = $this->contentService->loadContent($location->contentId, array($language));
 
         $reference = $this->routeGenerator->generate($location, array('language' => $language));
-        $url = $this->router->generate($reference, array('siteaccess' => $siteaccess), $this->fullUrl);
+        $url = $this->router->generate($reference, $parameters, $this->fullUrl);
 
         return array(
             'content' => $content,
-            'siteaccess' => $siteaccess,
+            'siteaccess' => $parameters['siteaccess'],
             'languageCode' => $language,
             'url' => $url
         );
@@ -160,22 +165,21 @@ class UrlGeneratorService
      *
      * @param string $uri
      * @param string $language
-     * @param string $siteaccess
+     * @param array  $parameters
      *
      * @return array
      */
-    protected function generateUriRoute($uri, $language, $siteaccess)
+    protected function generateUriRoute($uri, $language, $parameters)
     {
         $routeInfo = $this->router->match($uri);
 
-        $routeInfo['siteaccess'] = $siteaccess;
         $name = $routeInfo['_route'];
         unset($routeInfo['_route']);
 
         $route = $this->router->generate($name, $routeInfo, true);
 
         return array(
-            'siteaccess' => $siteaccess,
+            'siteaccess' => $parameters['siteaccess'],
             'languageCode' => $language,
             'url' => $route
         );
