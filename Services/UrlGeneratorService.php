@@ -92,7 +92,8 @@ class UrlGeneratorService
             'current' => null,
             'alternative' => array()
         );
-        if (count($parameters)) {
+        // removing first entry if empty (could be the request-uri).
+        if (count($parameters) && array_values($parameters)[0] === '') {
             array_shift($parameters);
         }
 
