@@ -34,7 +34,7 @@ class LanguageSwitchController extends Controller
      *
      * @return \Symfony\Component\HttpFoundation\Response
      */
-    public function generateAction(Request $request, $translationParameter, $parameters)
+    public function generateAction(Request $request, $translationParameter, $parameters = array())
     {
         /** @var UrlGeneratorService $urlGenerator */
         $urlGenerator = $this->container->get('intense.programming.language.switcher');

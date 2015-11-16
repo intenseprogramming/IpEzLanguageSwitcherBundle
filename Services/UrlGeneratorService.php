@@ -13,6 +13,7 @@ namespace IntenseProgramming\LanguageSwitcherBundle\Services;
 use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Configuration\ChainConfigResolver;
 use eZ\Publish\API\Repository\ContentService;
 use eZ\Publish\API\Repository\Exceptions\NotFoundException;
+use eZ\Publish\API\Repository\LocationService;
 use eZ\Publish\API\Repository\Values\Content\Location;
 use eZ\Publish\Core\MVC\Symfony\Routing\ChainRouter;
 use eZ\Publish\Core\MVC\Symfony\Routing\Generator\RouteReferenceGeneratorInterface;
@@ -38,7 +39,7 @@ class UrlGeneratorService
     protected $container;
 
     /**
-     * @var ChainRouter
+     * @var \eZ\Publish\Core\MVC\Symfony\Routing\ChainRouter
      */
     protected $router;
 
@@ -51,6 +52,11 @@ class UrlGeneratorService
      * @var ContentService
      */
     protected $contentService;
+
+    /**
+     * @var Location
+     */
+    protected $rootLocation;
 
     /**
      * @var ChainConfigResolver
@@ -153,6 +159,17 @@ class UrlGeneratorService
         $reference = $this->routeGenerator->generate($location, array('language' => $language));
         $url = $this->router->generate($reference, $parameters, $this->fullUrl);
 
+        /*
+         * Fix for urls generated for routes not using the tree-root location#2.
+         * @TODO: check if necessary or just a misunderstanding in configuration.
+         */
+        if (false) {
+
+        }
+        $rootReference = $this->routeGenerator->generate($this->rootLocation, array('language' => $language));
+        $rootUrl = $this->router->generate($rootReference, array(), false);
+        $url = preg_replace('/(\.[a-z]+)' . str_replace('/', '\/', $rootUrl) . '/', '$1', $url, 1);
+
         return array(
             'content' => $content,
             'siteaccess' => $parameters['siteaccess'],
@@ -203,6 +220,9 @@ class UrlGeneratorService
         $this->contentService = $this->container->get('ezpublish.api.service.content');
         $this->configResolver = $this->container->get('ezpublish.config.resolver');
         $this->router = $this->container->get('router');
+
+        $rootLocationId = $this->configResolver->getParameter('content.tree_root.location_id');
+        $this->rootLocation = $this->container->get('ezpublish.api.service.location')->loadLocation($rootLocationId);
 
         $matcherConfig = $this->container->getParameter('ezpublish.siteaccess.match_config');
         if (isset($matcherConfig['Map\Host'])) {
