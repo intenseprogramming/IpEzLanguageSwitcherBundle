@@ -159,17 +159,6 @@ class UrlGeneratorService
         $reference = $this->routeGenerator->generate($location, array('language' => $language));
         $url = $this->router->generate($reference, $parameters, $this->fullUrl);
 
-        /*
-         * Fix for urls generated for routes not using the tree-root location#2.
-         * @TODO: check if necessary or just a misunderstanding in configuration.
-         */
-        if (false) {
-
-        }
-        $rootReference = $this->routeGenerator->generate($this->rootLocation, array('language' => $language));
-        $rootUrl = $this->router->generate($rootReference, array(), false);
-        $url = preg_replace('/(\.[a-z]+)' . str_replace('/', '\/', $rootUrl) . '/', '$1', $url, 1);
-
         return array(
             'content' => $content,
             'siteaccess' => $parameters['siteaccess'],
