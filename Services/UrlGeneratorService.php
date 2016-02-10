@@ -13,9 +13,7 @@ namespace IntenseProgramming\LanguageSwitcherBundle\Services;
 use eZ\Bundle\EzPublishCoreBundle\DependencyInjection\Configuration\ChainConfigResolver;
 use eZ\Publish\API\Repository\ContentService;
 use eZ\Publish\API\Repository\Exceptions\NotFoundException;
-use eZ\Publish\API\Repository\LocationService;
 use eZ\Publish\API\Repository\Values\Content\Location;
-use eZ\Publish\Core\MVC\Symfony\Routing\ChainRouter;
 use eZ\Publish\Core\MVC\Symfony\Routing\Generator\RouteReferenceGeneratorInterface;
 use eZ\Publish\Core\MVC\Symfony\SiteAccess;
 use InvalidArgumentException;
@@ -126,10 +124,12 @@ class UrlGeneratorService
                                 );
                             }
 
-                            if ($requestAccess->name == $siteaccess) {
-                                $returnValue['current'] = $description;
-                            } else {
-                                $returnValue['alternative'][] = $description;
+                            if ($description) {
+                                if ($requestAccess->name == $siteaccess) {
+                                    $returnValue['current'] = $description;
+                                } else {
+                                    $returnValue['alternative'][] = $description;
+                                }
                             }
                         } catch (NotFoundException $exception) {
                         }
@@ -150,11 +150,30 @@ class UrlGeneratorService
      * @param string   $language
      * @param array    $parameters
      *
-     * @return array
+     * @return array|boolean
      */
     protected function generateLocationRoute(Location $location, $language, $parameters)
     {
-        $content = $this->contentService->loadContent($location->contentId, array($language));
+        $contentService = $this->contentService;
+        $container = $this->container;
+        $repository = $this->container->get('ezpublish.api.inner_repository');
+
+        $content = $repository->sudo(function() use ($container, $contentService, $location, $language) {
+            $content =  $contentService->loadContent($location->contentId, array($language));
+
+            if (!in_array($language, $content->versionInfo->languageCodes)) {
+                if (!$container->hasParameter('intense.programming.language.switcher.fallback.route') &&
+                    !$container->getParameter('intense.programming.language.switcher.fallback.route')) {
+                    return false;
+                }
+            }
+
+            return $content;
+        });
+
+        if (!$content) {
+            return false;
+        }
 
         $reference = $this->routeGenerator->generate($location, array('language' => $language));
         $url = $this->router->generate($reference, $parameters, $this->fullUrl);
